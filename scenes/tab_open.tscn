@@ -21,7 +21,7 @@ text = "Path:"
 
 [node name="Editor" type="TextEdit" parent="PathContainer"]
 margin_left = 36.0
-margin_right = 894.0
+margin_right = 830.0
 margin_bottom = 20.0
 size_flags_horizontal = 3
 text = "Path to RECORDS or RECORDS/month folder here"
@@ -29,10 +29,18 @@ deselect_on_focus_loss_enabled = false
 wrap_enabled = true
 
 [node name="OpenButton" type="Button" parent="PathContainer"]
-margin_left = 898.0
-margin_right = 989.0
+margin_left = 834.0
+margin_right = 925.0
 margin_bottom = 20.0
 text = "Open Folder"
+
+[node name="ClassifyButton" type="Button" parent="PathContainer"]
+margin_left = 929.0
+margin_right = 989.0
+margin_bottom = 20.0
+hint_tooltip = "This option will change the functionality of the Open Folder button to automatically classify and order all logs in the directory based on exploits detected."
+toggle_mode = true
+text = "Classify"
 
 [node name="MTButton" type="Button" parent="PathContainer"]
 margin_left = 993.0
@@ -172,5 +180,6 @@ max_columns = 36
 same_column_width = true
 
 [connection signal="pressed" from="PathContainer/OpenButton" to="." method="_on_OpenButton_pressed"]
+[connection signal="pressed" from="PathContainer/ClassifyButton" to="." method="_on_ClassifyButton_pressed"]
 [connection signal="pressed" from="PathContainer/MTButton" to="." method="_on_MTButton_pressed"]
 [connection signal="item_selected" from="ItemList" to="." method="_on_ItemList_item_selected"]

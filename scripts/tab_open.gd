@@ -8,6 +8,7 @@ var list_mode : String = "EMPTY"
 var current_path : String = ""
 #var thread = Thread.new()
 var multithread : bool = false
+var classify : bool = false
 
 func _ready():
 	if $SearchContainer/Day.selected == 0:
@@ -24,14 +25,17 @@ func _on_OpenButton_pressed():
 func _select_import_action_based_on_path(path):
 	var folder_names : Array = path.split("%c" % [092], false)
 	if folder_names.has("RECORDS") or folder_names.has("RECORDS_SUSP"):
-		if folder_names.back().begins_with("RECORDS"):
+		if folder_names[-1].begins_with("RECORDS"):
 			print("Path is RECORDS folder")
-			if multithread:
-				var thread = Thread.new()
-				thread.start(self, "_populate_players_list", path, 0)
+			if classify:
+				pass
 			else:
-				_populate_players_list(path)
-			list_mode = "PLAYERS"
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_populate_players_list", path, 0)
+				else:
+					_populate_players_list(path)
+				list_mode = "PLAYERS"
 		elif folder_names[-2].begins_with("RECORDS") or (folder_names.back().begins_with("20") and folder_names.back()[4] == "-"): #MONTH
 			print("Path is month folder")
 			if multithread:
@@ -324,9 +328,67 @@ func _populate_logs_list_from_records_folder(item_name : String, account_name : 
 	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
 	$Status.text = "All " + str(logs_list.size()) + " logs from " + item_name + " in the list. (Took " + str(time_elapsed) + " seconds)"
 
-
 func _on_MTButton_pressed():
 	if $PathContainer/MTButton.pressed:
 		multithread = true
 	else:
 		multithread = false
+
+func _on_ClassifyButton_pressed():
+	if $PathContainer/ClassifyButton.pressed:
+		classify = true
+		$ItemList.max_columns = 1
+	else:
+		classify = false
+		$ItemList.max_columns = 36
+
+func _classify_log_files(logs : Array):
+	logs_list = {}
+	for dictionary in logs:
+		var decomposed_log : Dictionary = utilities._get_decomposed_log(dictionary["PATH"])
+		var log_time : String = utilities._get_modification_timestamp_from_file(dictionary["PATH"])
+		var fps_analysis : Dictionary = utilities._get_fps_analysis(decomposed_log["FPS"], ["1#lows"])
+		var gas_analysis : Dictionary = utilities._get_likelihood_score_of_gas_tapping(decomposed_log["Acceleration"])
+		var nos_analysis : Dictionary = utilities._get_likelihood_score_of_nitro_tapping(decomposed_log["Nitro"])
+		var brakes_analysis : Dictionary = utilities._get_likelihood_score_of_brake_tapping(decomposed_log["Acceleration"], decomposed_log["Brakes"])
+		var total_score : int = int(gas_analysis["Score"] + nos_analysis["Score"] + brakes_analysis["Score"])
+		var detected : String = ""
+		if decomposed_log["Handling Change"]:
+			detected += "Handling "
+		if fps_analysis["Unstable?"]:
+			detected += "FPS(" + fps_analysis["1% Lows"] + ") "
+		if gas_analysis["Tapping?"] or nos_analysis["Tapping?"] or brakes_analysis["Tapping?"]:
+			detected += "Tapping "
+		if not detected:
+			detected += "Clean "
+		var entry_name : String = str(total_score) + ", " + dictionary["NICKNAME"] + " [" + detected.trim_suffix(" ") + "] " + log_time
+		logs_list[entry_name] = dictionary["PATH"]
+
+func _order_by_score() -> Array:
+	var ordered_list : Array = []
+	var handling_swaped : Dictionary = {}
+	var rest : Dictionary = {}
+	for entry in logs_list:
+		var score : String = entry.get_slice(",", 0).pad_zeros(10)
+		if "Handling" in entry:
+			handling_swaped = utilities._add_array_item_to_key(handling_swaped, score, entry)
+		else:
+			rest = utilities._add_array_item_to_key(rest, score, entry)
+	var ordered_handling_swaped : Array = handling_swaped.keys()
+	ordered_handling_swaped.sort()
+	ordered_handling_swaped.invert()
+	var ordered_rest : Array = rest.keys()
+	ordered_rest.sort()
+	ordered_rest.invert()
+	for score in ordered_handling_swaped:
+		for entry in handling_swaped[score]:
+			ordered_list.append(entry)
+	for score in ordered_rest:
+		for entry in rest[score]:
+			ordered_list.append(entry)
+	return ordered_list
+
+func _populate_logs_list_from_array(list : Array):
+	$ItemList.clear()
+	for entry in list:
+		$ItemList.add_item(entry)

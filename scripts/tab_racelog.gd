@@ -43,7 +43,7 @@ func _ready():
 func _on_CloseButton_pressed():
 	self.queue_free()
 
-func _parse_log(): #THIS SHIT GOTTA BE MADE BETTER, TOO MUCH COPY PASTE
+func _parse_log():
 	var lines : Array = race_log_text.split("\n", false)
 	for line in lines:
 		if line == "HANDLING BEFORE DYNOSETUP:":
@@ -172,7 +172,7 @@ func _analyse_fps(fps_log : Array):
 	$VBoxContainer/HSplitContainer/VSplitContainer/DynoChanges/RaceTimeContainer/RaceTime.text += str(floor(race_time/60)) + "m" + str(int(fmod(race_time, 60.0))) + "s."
 	average_fps = int(fps_sum / fps_log.size())
 	$VBoxContainer/HSplitContainer/VSplitContainer/DynoChanges/FPSContainer/FPSAverage.text += str(average_fps) + " "
-	var sorted_fps_log : Array = _sort_fps_array(fps_log)
+	var sorted_fps_log : Array = utilities._sort_fps_array(fps_log)
 	var one_percent_lows_thread = Thread.new()
 	one_percent_lows_thread.start(self, "_calc_1percent_lows", sorted_fps_log, Thread.PRIORITY_LOW)
 	var fps_mode_thread = Thread.new()
@@ -180,13 +180,6 @@ func _analyse_fps(fps_log : Array):
 	#_calc_fps_mode(sorted_fps_log)
 	var fps_min_max_thread = Thread.new()
 	fps_min_max_thread.start(self, "_calc_min_and_max", fps_log, Thread.PRIORITY_LOW)
-
-func _sort_fps_array(fps_log : Array) -> Array:
-	var padded_fps_log : Array = []
-	for value in fps_log:
-		padded_fps_log.append(str(value).pad_zeros(2))
-	padded_fps_log.sort()
-	return padded_fps_log
 
 func _calc_1percent_lows(sorted_fps_log : Array):
 	var result 
