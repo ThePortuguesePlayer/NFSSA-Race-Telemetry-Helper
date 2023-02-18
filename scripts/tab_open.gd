@@ -28,7 +28,12 @@ func _select_import_action_based_on_path(path):
 		if folder_names[-1].begins_with("RECORDS"):
 			print("Path is RECORDS folder")
 			if classify:
-				pass
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_execute_classification_from_records_folder", path, 1)
+				else:
+					_execute_classification_from_records_folder(path)
+				list_mode = "LOGS"
 			else:
 				if multithread:
 					var thread = Thread.new()
@@ -346,23 +351,24 @@ func _classify_log_files(logs : Array):
 	logs_list = {}
 	for dictionary in logs:
 		var decomposed_log : Dictionary = utilities._get_decomposed_log(dictionary["PATH"])
-		var log_time : String = utilities._get_modification_timestamp_from_file(dictionary["PATH"])
-		var fps_analysis : Dictionary = utilities._get_fps_analysis(decomposed_log["FPS"], ["1#lows"])
-		var gas_analysis : Dictionary = utilities._get_likelihood_score_of_gas_tapping(decomposed_log["Acceleration"])
-		var nos_analysis : Dictionary = utilities._get_likelihood_score_of_nitro_tapping(decomposed_log["Nitro"])
-		var brakes_analysis : Dictionary = utilities._get_likelihood_score_of_brake_tapping(decomposed_log["Acceleration"], decomposed_log["Brakes"])
-		var total_score : int = int(gas_analysis["Score"] + nos_analysis["Score"] + brakes_analysis["Score"])
-		var detected : String = ""
-		if decomposed_log["Handling Change"]:
-			detected += "Handling "
-		if fps_analysis["Unstable?"]:
-			detected += "FPS(" + fps_analysis["1% Lows"] + ") "
-		if gas_analysis["Tapping?"] or nos_analysis["Tapping?"] or brakes_analysis["Tapping?"]:
-			detected += "Tapping "
-		if not detected:
-			detected += "Clean "
-		var entry_name : String = str(total_score) + ", " + dictionary["NICKNAME"] + " [" + detected.trim_suffix(" ") + "] " + log_time
-		logs_list[entry_name] = dictionary["PATH"]
+		if decomposed_log["FPS"].size() > 0:
+			var log_time : String = utilities._get_modification_timestamp_from_file(dictionary["PATH"])
+			var fps_analysis : Dictionary = utilities._get_fps_analysis(decomposed_log["FPS"], ["1%lows", "stability"])
+			var gas_analysis : Dictionary = utilities._get_likelihood_score_of_gas_tapping(decomposed_log["Acceleration"])
+			var nos_analysis : Dictionary = utilities._get_likelihood_score_of_nitro_tapping(decomposed_log["Nitro"])
+			var brakes_analysis : Dictionary = utilities._get_likelihood_score_of_brake_tapping(decomposed_log["Acceleration"], decomposed_log["Brakes"])
+			var total_score : int = int(gas_analysis["Score"] + nos_analysis["Score"] + brakes_analysis["Score"])
+			var detected : String = ""
+			if decomposed_log["Handling Change"]:
+				detected += "Handling "
+			if fps_analysis["Unstable?"]:
+				detected += "FPS(" + str(fps_analysis["1% Lows"]) + ") "
+			if gas_analysis["Tapping?"] or nos_analysis["Tapping?"] or brakes_analysis["Tapping?"]:
+				detected += "Tapping "
+			if not detected:
+				detected += "Clean "
+			var entry_name : String = str(total_score) + ", " + dictionary["NICKNAME"] + " [" + detected.trim_suffix(" ") + "] " + log_time
+			logs_list[entry_name] = dictionary["PATH"]
 
 func _order_by_score() -> Array:
 	var ordered_list : Array = []
@@ -392,3 +398,85 @@ func _populate_logs_list_from_array(list : Array):
 	$ItemList.clear()
 	for entry in list:
 		$ItemList.add_item(entry)
+
+func _get_logs_for_classification_from_records_folder(path : String) -> Array:
+#	var start_time : float = Time.get_unix_time_from_system() 
+#	$Status.text = "Loading logs..."
+	var months : Array = $SearchContainer/MonthsButton.checked_items
+	var enabled_folders : Array = []
+	var logs : Array = []
+	var file_list : Array = utilities._list_files_in_directory(path)
+	
+	for folder in file_list:
+		if months.has(folder.substr(5)):
+			enabled_folders.append(folder)
+	var selected_day : String = str($SearchContainer/Day.selected).pad_zeros(2)
+	var selected_hour : String = $SearchContainer/Hour.get_item_text($SearchContainer/Hour.selected).pad_zeros(2)
+	var selected_minute : String = $SearchContainer/Minute.get_item_text($SearchContainer/Minute.selected)
+	for folder in enabled_folders:
+		if folder[4] == "-" and not "." in folder:
+			var folder_players : Array = utilities._list_files_in_directory(path + "%c" % [092] + folder)
+			for player in folder_players:
+				if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in player.to_lower():
+					var player_folder = path + "%c" % [092] + folder + "%c" % [092] + player
+					print(player_folder)
+					var folder_days : Array = utilities._list_files_in_directory(player_folder)
+					for day in folder_days:
+						if selected_day == "00" or selected_day == day:
+							var folder_cars : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day)
+							for car in folder_cars:
+								if not $SearchContainer/CarName.text or $SearchContainer/CarName.text.to_lower() in car.to_lower():
+									var txt_files : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day + "%c" % [092] + car)
+									var nickname_says_do_import_file : bool = false
+									var serial_says_do_import_file : bool = false
+									var local_nickname : String = ""
+									if txt_files.has("lastnickname.txt"):
+										local_nickname = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
+										if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in local_nickname.to_lower() or $SearchContainer/PlayerName.text.to_lower() in player.to_lower():
+											nickname_says_do_import_file = true
+									if txt_files.has("lastserial.txt"):
+										var local_serial : String = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
+										if not $SearchContainer/SerialNumber.text or $SearchContainer/SerialNumber.text.to_upper() in local_serial:
+											serial_says_do_import_file = true
+									if nickname_says_do_import_file and serial_says_do_import_file:
+										for file in txt_files:
+											if file != "lastnickname.txt" and file != "lastserial.txt":
+												if selected_hour == "All" or file.begins_with(selected_hour):
+													if selected_minute == "All" or file.substr(3).begins_with(selected_minute):
+														#var date : String = folder.substr(0, 4) + "/" + folder.substr(5) + "/" + day
+														#var entry_name : String = date + ", " + file.trim_suffix(".txt").replace(" ", ":") + " (" + car + ")"
+														#logs_list[entry_name] = player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + file
+														#$ItemList.add_item(entry_name)
+														#$ItemList.sort_items_by_text()
+														var path_to_file : String = player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + file
+														var nickname : String
+														print(path_to_file)
+														if local_nickname:
+															nickname = local_nickname + " (" + player + ")"
+														var dictionary : Dictionary = {
+															"NICKNAME" : nickname,
+															"PATH" : path_to_file
+														}
+														logs.append(dictionary)
+	
+#	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
+#	$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to load."
+	return logs
+
+func _execute_classification_from_records_folder(path : String):
+	var start_time : float = Time.get_unix_time_from_system() 
+	$Status.text = "Executing task..."
+	var logs_to_analyse : Array = _get_logs_for_classification_from_records_folder(path)
+	if multithread:
+		var total_logs = logs_to_analyse.size()
+		var number_of_threads = OS.get_processor_count() / 2
+		for i in number_of_threads:
+			var number_of_logs_per_thread = total_logs / number_of_threads
+			var logs_of_the_thread = logs_to_analyse.slice(i*number_of_logs_per_thread, (i+1)*number_of_logs_per_thread)
+			var thread = Thread.new()
+			thread.start(self, "_classify_log_files", logs_to_analyse, Thread.PRIORITY_NORMAL)
+	else:
+		_classify_log_files(logs_to_analyse)
+	_populate_logs_list_from_array(_order_by_score())
+	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
+	$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to analyse."

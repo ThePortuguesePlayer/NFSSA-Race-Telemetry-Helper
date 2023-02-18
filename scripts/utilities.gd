@@ -53,7 +53,7 @@ func _get_decomposed_log(path : String) -> Dictionary:
 	var parser_mode : String = "HEADER"
 	var lines : Array = text.split("\n", false)
 	for line in lines:
-		if line == "HANDLING BEFORE DYNOSETUP:":
+		if line == "HANDLING BEFORE DYNOSETUP:" or line == "NON-DYNO'D RACE START HANDLING":
 			parser_mode = "PREDYNO_HANDLING"
 		else:
 			match parser_mode:
@@ -133,7 +133,10 @@ func _get_fps_analysis(fps_log : Array, enabled_metrics : Array = ["average", "1
 		fps_sum = 0
 		for i in sorted_fps_log.size()*0.01:
 			fps_sum += int(sorted_fps_log[i])
-		one_percent_lows = int(fps_sum / (sorted_fps_log.size()*0.01))
+		if sorted_fps_log.size():
+			one_percent_lows = int(fps_sum / (sorted_fps_log.size()*0.01))
+		else:
+			one_percent_lows = sorted_fps_log[0]
 	# Mode is missing from here.
 	if enabled_metrics.has("average"):
 		output["Average"] = average_fps

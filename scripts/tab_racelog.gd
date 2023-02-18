@@ -46,7 +46,7 @@ func _on_CloseButton_pressed():
 func _parse_log():
 	var lines : Array = race_log_text.split("\n", false)
 	for line in lines:
-		if line == "HANDLING BEFORE DYNOSETUP:":
+		if line == "HANDLING BEFORE DYNOSETUP:" or line == "NON-DYNO'D RACE START HANDLING":
 			parser_mode = "PREDYNO_HANDLING"
 		else:
 			match parser_mode:
