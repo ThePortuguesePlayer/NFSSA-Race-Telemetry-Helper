@@ -29,6 +29,7 @@ var linechart = preload("res://scenes/racelog_linechart.tscn")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	$VBoxContainer/HSplitContainer/FileReader/Timestamp.text = utilities._get_modification_timestamp_from_file(path_to_file)
 	self.name = account_name + ", " + log_name.replace(":", "h")
 	race_log_text = utilities._get_text_from_file(path_to_file)
 	$VBoxContainer/HSplitContainer/FileReader/Text.text = race_log_text

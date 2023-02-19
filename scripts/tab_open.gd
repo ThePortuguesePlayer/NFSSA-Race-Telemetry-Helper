@@ -367,6 +367,7 @@ func _classify_log_files(logs : Array):
 				detected += "Tapping "
 			if not detected:
 				detected += "Clean "
+			print(log_time)
 			var entry_name : String = str(total_score) + ", " + dictionary["NICKNAME"] + " [" + detected.trim_suffix(" ") + "] " + log_time
 			logs_list[entry_name] = dictionary["PATH"]
 
@@ -419,7 +420,7 @@ func _get_logs_for_classification_from_records_folder(path : String) -> Array:
 			for player in folder_players:
 				if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in player.to_lower():
 					var player_folder = path + "%c" % [092] + folder + "%c" % [092] + player
-					print(player_folder)
+					#print(player_folder)
 					var folder_days : Array = utilities._list_files_in_directory(player_folder)
 					for day in folder_days:
 						if selected_day == "00" or selected_day == day:
@@ -450,7 +451,7 @@ func _get_logs_for_classification_from_records_folder(path : String) -> Array:
 														#$ItemList.sort_items_by_text()
 														var path_to_file : String = player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + file
 														var nickname : String
-														print(path_to_file)
+														#print(path_to_file)
 														if local_nickname:
 															nickname = local_nickname + " (" + player + ")"
 														var dictionary : Dictionary = {
