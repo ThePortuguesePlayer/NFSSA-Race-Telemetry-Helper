@@ -11,6 +11,7 @@ var multithread : bool = false
 var classify : bool = false
 
 func _ready():
+	set_process(false)
 	if $SearchContainer/Day.selected == 0:
 		$SearchContainer/Day.text = "D"
 	if $SearchContainer/Hour.selected == 0:
@@ -464,20 +465,32 @@ func _get_logs_for_classification_from_records_folder(path : String) -> Array:
 #	$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to load."
 	return logs
 
+var trigger : int
+var jump_start_time : float
 func _execute_classification_from_records_folder(path : String):
 	var start_time : float = Time.get_unix_time_from_system() 
 	$Status.text = "Executing task..."
 	var logs_to_analyse : Array = _get_logs_for_classification_from_records_folder(path)
 	if multithread:
 		var total_logs = logs_to_analyse.size()
-		var number_of_threads = OS.get_processor_count() / 2
+		trigger = total_logs
+		var number_of_threads = 1#OS.get_processor_count()
 		for i in number_of_threads:
 			var number_of_logs_per_thread = total_logs / number_of_threads
 			var logs_of_the_thread = logs_to_analyse.slice(i*number_of_logs_per_thread, (i+1)*number_of_logs_per_thread)
 			var thread = Thread.new()
 			thread.start(self, "_classify_log_files", logs_to_analyse, Thread.PRIORITY_NORMAL)
+		jump_start_time = start_time
+		set_process(true)
 	else:
 		_classify_log_files(logs_to_analyse)
-	_populate_logs_list_from_array(_order_by_score())
-	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
-	$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to analyse."
+		_populate_logs_list_from_array(_order_by_score())
+		var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
+		$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to analyse."
+
+func _process(delta):
+	if logs_list.size() >= trigger:
+		_populate_logs_list_from_array(_order_by_score())
+		var time_elapsed : float = Time.get_unix_time_from_system() - jump_start_time 
+		$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to analyse."
+		set_process(false)
