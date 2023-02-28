@@ -30,10 +30,9 @@ var linechart = preload("res://scenes/racelog_linechart.tscn")
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	$VBoxContainer/HSplitContainer/FileReader/Timestamp.text = utilities._get_modification_timestamp_from_file(path_to_file)
-	self.name = account_name + ", " + log_name.replace(":", "h")
+	self.name = _assemble_tab_name(path_to_file)
 	race_log_text = utilities._get_text_from_file(path_to_file)
 	$VBoxContainer/HSplitContainer/FileReader/Text.text = race_log_text
-	#thread.start(self, _parse_log(), null, Thread.PRIORITY_LOW)
 	_parse_log()
 	#_generate_fps_chart()
 
@@ -351,3 +350,16 @@ func _on_FileReader_OptionButton_item_selected(index):
 			for i in range(0, decomposed_log["FPS"].size() - 1):
 				text += " " + str(decomposed_log["FPS"][i]).pad_zeros(2) + "      " + str(decomposed_log["Speed"][i]).pad_zeros(3) + "       " + str(decomposed_log["Acceleration"][i]).pad_zeros(2) + "       " + str(decomposed_log["Brakes"][i]).pad_zeros(2) + "            " + str(decomposed_log["Handbrake"][i]/8) + "          " + str(decomposed_log["Nitro"][i]).pad_zeros(2) + "         " + str(decomposed_log["Gear"][i]) + "\n"
 			$VBoxContainer/HSplitContainer/FileReader/Text.text = text
+
+func _assemble_tab_name(path : String):
+	var directory : String = path.get_base_dir()
+	var file = File.new()
+	var nickname : String = account_name
+	var dir_array : Array = directory.split("%c" % [092], false)
+	if file.file_exists(directory + "%c" % [092] + "lastnickname.txt"):
+		nickname = utilities._get_text_from_file(directory + "%c" % [092] + "lastnickname.txt")
+	elif dir_array[-4][4] == "-":
+		nickname = dir_array[-3]
+	var timestamp : String = utilities._get_modification_timestamp_from_file(path)
+	var car_name : String = dir_array[-1]
+	return nickname + ", " + timestamp.replace(":", "h") + ", " + car_name
