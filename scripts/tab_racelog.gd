@@ -29,9 +29,9 @@ var linechart = preload("res://scenes/racelog_linechart.tscn")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	$VBoxContainer/HSplitContainer/FileReader/Timestamp.text = utilities._get_modification_timestamp_from_file(path_to_file)
+	$VBoxContainer/HSplitContainer/FileReader/Timestamp.text = Utilities._get_modification_timestamp_from_file(path_to_file)
 	self.name = _assemble_tab_name(path_to_file)
-	race_log_text = utilities._get_text_from_file(path_to_file)
+	race_log_text = Utilities._get_text_from_file(path_to_file)
 	$VBoxContainer/HSplitContainer/FileReader/Text.text = race_log_text
 	_parse_log()
 	#_generate_fps_chart()
@@ -172,7 +172,7 @@ func _analyse_fps(fps_log : Array):
 	$VBoxContainer/HSplitContainer/VSplitContainer/DynoChanges/RaceTimeContainer/RaceTime.text += str(floor(race_time/60)) + "m" + str(int(fmod(race_time, 60.0))) + "s."
 	average_fps = int(fps_sum / fps_log.size())
 	$VBoxContainer/HSplitContainer/VSplitContainer/DynoChanges/FPSContainer/FPSAverage.text += str(average_fps) + " "
-	var sorted_fps_log : Array = utilities._sort_fps_array(fps_log)
+	var sorted_fps_log : Array = Utilities._sort_fps_array(fps_log)
 	var one_percent_lows_thread = Thread.new()
 	one_percent_lows_thread.start(self, "_calc_1percent_lows", sorted_fps_log, Thread.PRIORITY_LOW)
 	var fps_mode_thread = Thread.new()
@@ -192,7 +192,7 @@ func _calc_1percent_lows(sorted_fps_log : Array):
 func _calc_fps_mode(fps_log : Array):
 	var dictionary : Dictionary = {}
 	for value in fps_log:
-		dictionary = utilities._add_array_item_to_key(dictionary, value, value)
+		dictionary = Utilities._add_array_item_to_key(dictionary, value, value)
 	var fps_mode : String
 	var mode_counter : int = 0 
 	for key in dictionary:
@@ -357,9 +357,9 @@ func _assemble_tab_name(path : String):
 	var nickname : String = account_name
 	var dir_array : Array = directory.split("%c" % [092], false)
 	if file.file_exists(directory + "%c" % [092] + "lastnickname.txt"):
-		nickname = utilities._get_text_from_file(directory + "%c" % [092] + "lastnickname.txt")
+		nickname = Utilities._get_text_from_file(directory + "%c" % [092] + "lastnickname.txt")
 	elif dir_array[-4][4] == "-":
 		nickname = dir_array[-3]
-	var timestamp : String = utilities._get_modification_timestamp_from_file(path)
+	var timestamp : String = Utilities._get_modification_timestamp_from_file(path)
 	var car_name : String = dir_array[-1]
 	return nickname + ", " + timestamp.replace(":", "h") + ", " + car_name

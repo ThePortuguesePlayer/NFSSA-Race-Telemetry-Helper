@@ -23,89 +23,101 @@ func _on_OpenButton_pressed():
 	current_path = $PathContainer/Editor.text
 	_select_import_action_based_on_path(current_path)
 
-func _select_import_action_based_on_path(path):
+func _select_import_action_based_on_path(path : String):
 	var folder_names : Array = path.split("%c" % [092], false)
-	if folder_names.has("RECORDS") or folder_names.has("RECORDS_SUSP"):
-		if folder_names[-1].begins_with("RECORDS"):
-			print("Path is RECORDS folder")
-			if classify:
-				if multithread:
-					var thread = Thread.new()
-					thread.start(self, "_execute_classification_from_records_folder", path, 1)
-				else:
-					_execute_classification_from_records_folder(path)
-				list_mode = "LOGS"
-			else:
-				if multithread:
-					var thread = Thread.new()
-					thread.start(self, "_populate_players_list", path, 0)
-				else:
-					_populate_players_list(path)
-				list_mode = "PLAYERS"
-		elif folder_names[-2].begins_with("RECORDS") or (folder_names.back().begins_with("20") and folder_names.back()[4] == "-"): #MONTH
-			print("Path is month folder")
-			if multithread:
-				var thread = Thread.new()
-				thread.start(self, "_populate_player_list_of_single_month", path, 1)
-			else:
-				_populate_player_list_of_single_month(path)
-			list_mode = "PLAYERS"
-		elif folder_names[-3].begins_with("RECORDS") or (folder_names[-2].begins_with("20") and folder_names[-2][4] == "-"): #PLAYER
-			print("Path is player folder")
-			if multithread:
-				var thread = Thread.new()
-				thread.start(self, "_populate_logs_list_from_player_folder", path, 1)
-			else:
-				_populate_logs_list_from_player_folder(path)
-			list_mode = "LOGS"
-		elif folder_names[-4].begins_with("RECORDS") or (folder_names[-3].begins_with("20") and folder_names[-3][4] == "-"): #DAY
-			print("Path is day folder")
-			if multithread:
-				var thread = Thread.new()
-				thread.start(self, "_populate_player_logs_from_day_folder", path, 1)
-			else:
-				_populate_player_logs_from_day_folder(path)
-			list_mode = "LOGS"
-		elif folder_names[-5].begins_with("RECORDS") or (folder_names[-4].begins_with("20") and folder_names[-4][4] == "-"): #CAR
-			print("Path is car folder")
-			if multithread:
-				var thread = Thread.new()
-				thread.start(self, "_populate_player_logs_from_car_folder", path, 1)
-			else:
-				_populate_player_logs_from_car_folder(path)
-			list_mode = "LOGS"
-	else:
-		var present_files : Array = utilities._list_files_in_directory(path)
-		if not present_files.has("lastnickname.txt") or not present_files.has("lastserial.txt"):
-			var files_found : bool = false
-			for file in present_files:
-				if file.ends_with(".txt") and file[2] == " ":
-					files_found = true
-					# And add it to the list <--
+	var directory = Directory.new()
+	if directory.dir_exists(path):
+		if folder_names.has("RECORDS") or folder_names.has("RECORDS_SUSP"):
+			if folder_names[-1].begins_with("RECORDS"):
+				print("Path is RECORDS folder")
+				if classify:
+					if multithread:
+						var thread = Thread.new()
+						thread.start(self, "_execute_classification_from_records_folder", path, 1)
+					else:
+						_execute_classification_from_records_folder(path)
 					list_mode = "LOGS"
-				elif file.begins_with("RECORDS") and not "." in file:
-					files_found = true
-					# enter folders and add players to the list <--
+				else:
+					if multithread:
+						var thread = Thread.new()
+						thread.start(self, "_populate_players_list", path, 0)
+					else:
+						_populate_players_list(path)
 					list_mode = "PLAYERS"
-			if not files_found:
-				$PathContainer/Editor.text = "Path to RECORDS or any of its subfolders here"
-				list_mode = "EMPTY"
-				$ItemList.clear()
+			elif folder_names[-2].begins_with("RECORDS") or (folder_names.back().begins_with("20") and folder_names.back()[4] == "-"): #MONTH
+				print("Path is month folder")
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_populate_player_list_of_single_month", path, 1)
+				else:
+					_populate_player_list_of_single_month(path)
+				list_mode = "PLAYERS"
+			elif folder_names[-3].begins_with("RECORDS") or (folder_names[-2].begins_with("20") and folder_names[-2][4] == "-"): #PLAYER
+				print("Path is player folder")
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_populate_logs_list_from_player_folder", path, 1)
+				else:
+					_populate_logs_list_from_player_folder(path)
+				list_mode = "LOGS"
+			elif folder_names[-4].begins_with("RECORDS") or (folder_names[-3].begins_with("20") and folder_names[-3][4] == "-"): #DAY
+				print("Path is day folder")
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_populate_player_logs_from_day_folder", path, 1)
+				else:
+					_populate_player_logs_from_day_folder(path)
+				list_mode = "LOGS"
+			elif folder_names[-5].begins_with("RECORDS") or (folder_names[-4].begins_with("20") and folder_names[-4][4] == "-"): #CAR
+				print("Path is car folder")
+				if multithread:
+					var thread = Thread.new()
+					thread.start(self, "_populate_player_logs_from_car_folder", path, 1)
+				else:
+					_populate_player_logs_from_car_folder(path)
+				list_mode = "LOGS"
 		else:
+			var present_files : Array = Utilities._list_files_in_directory(path)
+			if not present_files.has("lastnickname.txt") or not present_files.has("lastserial.txt"):
+				var files_found : bool = false
+				for file in present_files:
+					if file.ends_with(".txt") and file[2] == " ":
+						files_found = true
+						# And add it to the list <--
+						list_mode = "LOGS"
+					elif file.begins_with("RECORDS") and not "." in file:
+						files_found = true
+						# enter folders and add players to the list <--
+						list_mode = "PLAYERS"
+				if not files_found:
+					$PathContainer/Editor.text = "Path to RECORDS or any of its subfolders here"
+					list_mode = "EMPTY"
+					$ItemList.clear()
+			else:
+				pass
+	elif directory.file_exists(path) and path.get_extension() == "7z":
+		if classify:
 			pass
+		else:
+			if multithread:
+				var thread = Thread.new()
+				thread.start(self, "_7z_populate_player_list_of_single_month", path, 0)
+			else:
+				_7z_populate_player_list_of_single_month(path)
+			list_mode = "PLAYERS"
 
 func _populate_player_logs_from_day_folder(path):
 	var start_time : float = Time.get_unix_time_from_system() 
 	$Status.text = "Loading logs..."
 	$ItemList.clear()
 	logs_list = {}
-	var folders_list : Array = utilities._list_files_in_directory(path)
+	var folders_list : Array = Utilities._list_files_in_directory(path)
 	var nickname : String
 	for car in folders_list:
 		var car_folder : String = path + "%c" % [092] + car
-		var files_list : Array = utilities._list_files_in_directory(car_folder)
+		var files_list : Array = Utilities._list_files_in_directory(car_folder)
 		if files_list.has("lastnickname.txt"):
-			nickname = utilities._get_text_from_file(car_folder + "%c" % [092] + "lastnickname.txt")
+			nickname = Utilities._get_text_from_file(car_folder + "%c" % [092] + "lastnickname.txt")
 			break
 	if not nickname:
 		var split_path : Array = path.split("%c" % [092], false)
@@ -113,7 +125,7 @@ func _populate_player_logs_from_day_folder(path):
 	active_account = nickname
 	for car in folders_list:
 		if $SearchContainer/CarName.text in car or not $SearchContainer/CarName.text:
-			var files_list : Array = utilities._list_files_in_directory(path + "%c" % [092] + car)
+			var files_list : Array = Utilities._list_files_in_directory(path + "%c" % [092] + car)
 			for file in files_list:
 				if file != "lastnickname.txt" and file != "lastserial.txt":
 					if ($SearchContainer/Hour.get_item_text($SearchContainer/Hour.selected) == "All" or $SearchContainer/Hour.get_item_text($SearchContainer/Hour.selected).pad_zeros(2) == file.substr(0, 2)) and ($SearchContainer/Minute.get_item_text($SearchContainer/Minute.selected) == "All" or $SearchContainer/Minute.get_item_text($SearchContainer/Minute.selected).pad_zeros(2) == file.substr(3, 2)):
@@ -131,10 +143,10 @@ func _populate_player_logs_from_car_folder(path):
 	$ItemList.clear()
 	logs_list = {}
 	#var split_path : Array = path.split("%c" % [092], false)
-	var files_list : Array = utilities._list_files_in_directory(path)
+	var files_list : Array = Utilities._list_files_in_directory(path)
 	var nickname : String
 	if files_list.has("lastnickname.txt"):
-		 nickname = utilities._get_text_from_file(path + "%c" % [092] + "lastnickname.txt")
+		 nickname = Utilities._get_text_from_file(path + "%c" % [092] + "lastnickname.txt")
 	else:
 		var split_path : Array = path.split("%c" % [092], false)
 		nickname = split_path[-3]
@@ -160,7 +172,7 @@ func _populate_players_list(path) -> void:
 	$Status.text = "Loading players..."
 	$ItemList.clear()
 	players_list = {}
-	var records : Array = utilities._list_files_in_directory(path)
+	var records : Array = Utilities._list_files_in_directory(path)
 	var months : Array = $SearchContainer/MonthsButton.checked_items
 	var enabled_folders : Array = []
 	for folder in records:
@@ -168,7 +180,7 @@ func _populate_players_list(path) -> void:
 			enabled_folders.append(folder)
 	for month in enabled_folders:
 		var month_path : String = path + "%c" % [092] + month
-		var accounts : Array = utilities._list_files_in_directory(month_path)
+		var accounts : Array = Utilities._list_files_in_directory(month_path)
 		for account in accounts:
 			var account_path : String = month_path + "%c" % [092] + account
 			var nickname : String = _dig_into_account_for_last_nickname(account_path)
@@ -190,12 +202,24 @@ func _populate_player_list_of_single_month(path) -> void:
 	$Status.text = "Loading players..."
 	$ItemList.clear()
 	players_list = {}
-	var accounts : Array = utilities._list_files_in_directory(path)
+	var accounts : Array = Utilities._list_files_in_directory(path)
 	for account in accounts:
 		var account_path : String = path + "%c" % [092] + account
 		var nickname : String = _dig_into_account_for_last_nickname(account_path)
 		if nickname:
 			_assemble_player_name_and_add_to_itemlist(account, nickname, account_path)
+	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
+	$Status.text = "All " + str(players_list.size()) + " players in the list. (Took " + str(time_elapsed) + " seconds)"
+
+func _7z_populate_player_list_of_single_month(path) -> void:
+	var start_time : float = Time.get_unix_time_from_system()
+	$Status.text = "Loading players..."
+	$ItemList.clear()
+	players_list = {}
+	var assembled_names_list : Array = Utilities._7z_get_account_and_nicknames_list(path)
+	for player in assembled_names_list:
+		$ItemList.add_item(player)
+		players_list[player] = [player.get_slice(" ", 0), player.get_slice(" (", 1).trim_suffix(")")]
 	var time_elapsed : float = Time.get_unix_time_from_system() - start_time 
 	$Status.text = "All " + str(players_list.size()) + " players in the list. (Took " + str(time_elapsed) + " seconds)"
 
@@ -208,20 +232,20 @@ func _populate_logs_list_from_player_folder(path) -> void:
 	$Status.text = "Loading logs from " + player_full_name + "..."
 	$ItemList.clear()
 	logs_list = {}
-	var folder_days : Array = utilities._list_files_in_directory(path)
+	var folder_days : Array = Utilities._list_files_in_directory(path)
 	for day in folder_days:
-		var folder_cars : Array = utilities._list_files_in_directory(path + "%c" % [092] + day)
+		var folder_cars : Array = Utilities._list_files_in_directory(path + "%c" % [092] + day)
 		for car in folder_cars:
 			if not $SearchContainer/CarName.text or $SearchContainer/CarName.text.to_lower() in car.to_lower():
-				var txt_files : Array = utilities._list_files_in_directory(path + "%c" % [092] + day + "%c" % [092] + car)
+				var txt_files : Array = Utilities._list_files_in_directory(path + "%c" % [092] + day + "%c" % [092] + car)
 				var nickname_says_do_import_file : bool = false
 				var serial_says_do_import_file : bool = false
 				if txt_files.has("lastnickname.txt"):
-					var local_nickname : String = utilities._get_text_from_file(path + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
+					var local_nickname : String = Utilities._get_text_from_file(path + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
 					if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in local_nickname.to_lower() or $SearchContainer/PlayerName.text.to_lower() in player_account_name.to_lower():
 						nickname_says_do_import_file = true
 				if txt_files.has("lastserial.txt"):
-					var local_serial : String = utilities._get_text_from_file(path + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
+					var local_serial : String = Utilities._get_text_from_file(path + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
 					if not $SearchContainer/SerialNumber.text or $SearchContainer/SerialNumber.text.to_upper() in local_serial:
 						serial_says_do_import_file = true
 				if nickname_says_do_import_file and serial_says_do_import_file:
@@ -236,7 +260,7 @@ func _populate_logs_list_from_player_folder(path) -> void:
 
 func _dig_into_account_for_last_nickname(path) -> String:
 	var car_search : String = $SearchContainer/CarName.text
-	var days : Array = utilities._list_files_in_directory(path)
+	var days : Array = Utilities._list_files_in_directory(path)
 	var cars : Array
 	var found_car : String
 	var found_day : String
@@ -246,7 +270,7 @@ func _dig_into_account_for_last_nickname(path) -> String:
 		for day in days:
 			if not found:
 				found_day = day
-				cars = utilities._list_files_in_directory(path + "%c" % [092] + day)
+				cars = Utilities._list_files_in_directory(path + "%c" % [092] + day)
 				cars.invert()
 				for car in cars:
 					if car_search.to_lower() in car.to_lower():
@@ -257,15 +281,15 @@ func _dig_into_account_for_last_nickname(path) -> String:
 				break
 	else:
 		found = true
-		cars = utilities._list_files_in_directory(path + "%c" % [092] + days.back())
+		cars = Utilities._list_files_in_directory(path + "%c" % [092] + days.back())
 		found_car = cars.back()
 		found_day = days.back()
 	if found:
 		var lastnicknametxt_path : String = path + "%c" % [092] + found_day + "%c" % [092] + found_car + "%c" % [092] + "lastnickname.txt"
-		var nickname : String = utilities._get_text_from_file(lastnicknametxt_path)
+		var nickname : String = Utilities._get_text_from_file(lastnicknametxt_path)
 #	if not nickname:
 #		lastnicknametxt_path = path + "%c" % [092] + days.back() + "%c" % [092] + cars.front() + "%c" % [092] + "lastnickname.txt"
-#		nickname = utilities._get_text_from_file(lastnicknametxt_path)
+#		nickname = Utilities._get_text_from_file(lastnicknametxt_path)
 		return nickname
 	else:
 		return ""
@@ -277,7 +301,7 @@ func _on_ItemList_item_selected(index):
 		"LOGS":
 			emit_signal("log_selected", item_name, logs_list[item_name], active_account)
 		"PLAYERS": # CHANGE THIS TO A FILTER SO IT INCLUDES ALL MONTHS
-			var file_list : Array = utilities._list_files_in_directory(current_path)
+			var file_list : Array = Utilities._list_files_in_directory(current_path)
 			if file_list.has(players_list[item_name][0]):
 				current_path += "%c" % [092] + players_list[item_name][0]
 				_populate_logs_list_from_player_folder(current_path)
@@ -304,21 +328,21 @@ func _populate_logs_list_from_records_folder(item_name : String, account_name : 
 	for folder in enabled_folders:
 		if folder[4] == "-" and not "." in folder:
 			var player_folder = path + "%c" % [092] + folder + "%c" % [092] + account_name
-			var folder_days : Array = utilities._list_files_in_directory(player_folder)
+			var folder_days : Array = Utilities._list_files_in_directory(player_folder)
 			for day in folder_days:
 				if selected_day == "00" or selected_day == day:
-					var folder_cars : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day)
+					var folder_cars : Array = Utilities._list_files_in_directory(player_folder + "%c" % [092] + day)
 					for car in folder_cars:
 						if not $SearchContainer/CarName.text or $SearchContainer/CarName.text.to_lower() in car.to_lower():
-							var txt_files : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day + "%c" % [092] + car)
+							var txt_files : Array = Utilities._list_files_in_directory(player_folder + "%c" % [092] + day + "%c" % [092] + car)
 							var nickname_says_do_import_file : bool = false
 							var serial_says_do_import_file : bool = false
 							if txt_files.has("lastnickname.txt"):
-								var local_nickname : String = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
+								var local_nickname : String = Utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
 								if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in local_nickname.to_lower() or $SearchContainer/PlayerName.text.to_lower() in item_name.to_lower():
 									nickname_says_do_import_file = true
 							if txt_files.has("lastserial.txt"):
-								var local_serial : String = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
+								var local_serial : String = Utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
 								if not $SearchContainer/SerialNumber.text or $SearchContainer/SerialNumber.text.to_upper() in local_serial:
 									serial_says_do_import_file = true
 							if nickname_says_do_import_file and serial_says_do_import_file:
@@ -351,13 +375,13 @@ func _on_ClassifyButton_pressed():
 func _classify_log_files(logs : Array):
 	logs_list = {}
 	for dictionary in logs:
-		var decomposed_log : Dictionary = utilities._get_decomposed_log(dictionary["PATH"])
+		var decomposed_log : Dictionary = Utilities._get_decomposed_log(dictionary["PATH"])
 		if decomposed_log["FPS"].size() > 0:
-			var log_time : String = utilities._get_modification_timestamp_from_file(dictionary["PATH"])
-			var fps_analysis : Dictionary = utilities._get_fps_analysis(decomposed_log["FPS"], ["1%lows", "stability"])
-			var gas_analysis : Dictionary = utilities._get_likelihood_score_of_gas_tapping(decomposed_log["Acceleration"])
-			var nos_analysis : Dictionary = utilities._get_likelihood_score_of_nitro_tapping(decomposed_log["Nitro"])
-			var brakes_analysis : Dictionary = utilities._get_likelihood_score_of_brake_tapping(decomposed_log["Acceleration"], decomposed_log["Brakes"])
+			var log_time : String = Utilities._get_modification_timestamp_from_file(dictionary["PATH"])
+			var fps_analysis : Dictionary = Utilities._get_fps_analysis(decomposed_log["FPS"], ["1%lows", "stability"])
+			var gas_analysis : Dictionary = Utilities._get_likelihood_score_of_gas_tapping(decomposed_log["Acceleration"])
+			var nos_analysis : Dictionary = Utilities._get_likelihood_score_of_nitro_tapping(decomposed_log["Nitro"])
+			var brakes_analysis : Dictionary = Utilities._get_likelihood_score_of_brake_tapping(decomposed_log["Acceleration"], decomposed_log["Brakes"])
 			var total_score : int = int(gas_analysis["Score"] + nos_analysis["Score"] + brakes_analysis["Score"])
 			var detected : String = ""
 			if decomposed_log["Handling Change"]:
@@ -379,9 +403,9 @@ func _order_by_score() -> Array:
 	for entry in logs_list:
 		var score : String = entry.get_slice(",", 0).pad_zeros(10)
 		if "Handling" in entry:
-			handling_swaped = utilities._add_array_item_to_key(handling_swaped, score, entry)
+			handling_swaped = Utilities._add_array_item_to_key(handling_swaped, score, entry)
 		else:
-			rest = utilities._add_array_item_to_key(rest, score, entry)
+			rest = Utilities._add_array_item_to_key(rest, score, entry)
 	var ordered_handling_swaped : Array = handling_swaped.keys()
 	ordered_handling_swaped.sort()
 	ordered_handling_swaped.invert()
@@ -407,7 +431,7 @@ func _get_logs_for_classification_from_records_folder(path : String) -> Array:
 	var months : Array = $SearchContainer/MonthsButton.checked_items
 	var enabled_folders : Array = []
 	var logs : Array = []
-	var file_list : Array = utilities._list_files_in_directory(path)
+	var file_list : Array = Utilities._list_files_in_directory(path)
 	
 	for folder in file_list:
 		if months.has(folder.substr(5)):
@@ -417,27 +441,27 @@ func _get_logs_for_classification_from_records_folder(path : String) -> Array:
 	var selected_minute : String = $SearchContainer/Minute.get_item_text($SearchContainer/Minute.selected)
 	for folder in enabled_folders:
 		if folder[4] == "-" and not "." in folder:
-			var folder_players : Array = utilities._list_files_in_directory(path + "%c" % [092] + folder)
+			var folder_players : Array = Utilities._list_files_in_directory(path + "%c" % [092] + folder)
 			for player in folder_players:
 				if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in player.to_lower():
 					var player_folder = path + "%c" % [092] + folder + "%c" % [092] + player
 					#print(player_folder)
-					var folder_days : Array = utilities._list_files_in_directory(player_folder)
+					var folder_days : Array = Utilities._list_files_in_directory(player_folder)
 					for day in folder_days:
 						if selected_day == "00" or selected_day == day:
-							var folder_cars : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day)
+							var folder_cars : Array = Utilities._list_files_in_directory(player_folder + "%c" % [092] + day)
 							for car in folder_cars:
 								if not $SearchContainer/CarName.text or $SearchContainer/CarName.text.to_lower() in car.to_lower():
-									var txt_files : Array = utilities._list_files_in_directory(player_folder + "%c" % [092] + day + "%c" % [092] + car)
+									var txt_files : Array = Utilities._list_files_in_directory(player_folder + "%c" % [092] + day + "%c" % [092] + car)
 									var nickname_says_do_import_file : bool = false
 									var serial_says_do_import_file : bool = false
 									var local_nickname : String = ""
 									if txt_files.has("lastnickname.txt"):
-										local_nickname = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
+										local_nickname = Utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastnickname.txt")
 										if not $SearchContainer/PlayerName.text or $SearchContainer/PlayerName.text.to_lower() in local_nickname.to_lower() or $SearchContainer/PlayerName.text.to_lower() in player.to_lower():
 											nickname_says_do_import_file = true
 									if txt_files.has("lastserial.txt"):
-										var local_serial : String = utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
+										var local_serial : String = Utilities._get_text_from_file(player_folder + "%c" % [092] + day + "%c" % [092] + car + "%c" % [092] + "lastserial.txt")
 										if not $SearchContainer/SerialNumber.text or $SearchContainer/SerialNumber.text.to_upper() in local_serial:
 											serial_says_do_import_file = true
 									if nickname_says_do_import_file and serial_says_do_import_file:
@@ -494,3 +518,7 @@ func _process(delta):
 		var time_elapsed : float = Time.get_unix_time_from_system() - jump_start_time 
 		$Status.text = "All " + str(logs_list.size()) + " logs took " + str(time_elapsed) + " seconds to analyse."
 		set_process(false)
+
+
+func _on_7zButton_pressed():
+	pass

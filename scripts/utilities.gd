@@ -269,9 +269,91 @@ func _get_likelihood_score_of_brake_tapping(gas_log : Array, brakes_log : Array)
 func _get_modification_timestamp_from_file(file_path : String) -> String:
 	var file_instance = File.new()
 	var modification_unix_time : int = file_instance.get_modified_time(file_path)
-	#print(modification_unix_time)
 	var modification_date : String = Time.get_datetime_string_from_unix_time(modification_unix_time, true)
-	#print(modification_date)
-	#print(modification_date.substr(0, 16))
-	#modification_date.erase(-3, 3)
 	return modification_date.substr(0, 16)
+
+func _7z_get_files_list(path_to_file) -> Array:
+	var executable : String = "res://modules/7zr.exe"
+	var file = File.new()
+	file.open(executable, File.READ)
+	executable = file.get_path_absolute()
+	var arguments : Array = ["l", "-ba", "-slt", path_to_file]
+	var output : Array
+	var error_code = OS.execute(executable, arguments, true, output, false, false)
+	var list : Array = []
+	if not error_code:
+		var current_path : String
+		for line in output[0].split("\n", false):
+			if line.begins_with("Path = "):
+				current_path = line.trim_prefix("Path = ").strip_edges(false, true)
+			elif ".txt" in current_path and line.begins_with("Modified = "):
+				var array : Array = [current_path, line.substr(11, 16)]
+				list.append(array)
+	else:
+		print("7z file could not be processed.")
+		return ["7z file could not be processed."]
+	return list
+
+# move this function below to tab_open and make it add the items to the Item_list one by one rather than return an array.
+func _7z_get_account_and_nicknames_list(path_to_file : String) -> PoolStringArray:
+	var executable : String = "res://modules/7zr.exe"
+	var file = File.new()
+	file.open(executable, File.READ)
+	executable = file.get_path_absolute()
+	var arguments : Array = ["l", "-ba", "-slt", path_to_file]
+	var output : Array
+	var error_code = OS.execute(executable, arguments, true, output, false, false)
+	var list_of_assembled_names : PoolStringArray = []
+	var accounts_list : Array = []
+	if not error_code:
+		for line in output[0].split("\n", false):
+			if line.begins_with("Path = ") and line.strip_edges(false, true).ends_with("lastnickname.txt"):
+				var current_path : String = line.trim_prefix("Path = ").strip_edges(false, true)
+				var current_account : String = current_path.get_slice("%c" % [092], 0)
+				if not accounts_list.has(current_account): 
+					var path_to_extracted_file : String = _7z_extract_file(path_to_file, current_path)
+					var assembled_name : String = ""
+					if path_to_extracted_file:
+						assembled_name = current_account + " (" + _get_text_from_file(path_to_extracted_file) + ")"
+						_delete_temp_file(path_to_extracted_file)
+					if assembled_name:
+						list_of_assembled_names.append(assembled_name)
+						accounts_list.append(current_account)
+	else:
+		print("7z file could not be processed.")
+	return list_of_assembled_names
+
+func _7z_extract_file(archive_path : String, file_path : String) -> String:
+	var file_name : String = archive_path.get_file().get_basename()
+	var work_directory : String = OS.get_executable_path().get_base_dir() + "%c" % [092] + "_7ztemp%c" % [092] + file_name
+	work_directory = work_directory.replace("/", "%c" % [092])
+	var executable : String = "res://modules/7zr.exe"
+	var file = File.new()
+	file.open(executable, File.READ)
+	executable = file.get_path_absolute()
+	var arguments : Array = ["x", archive_path, "-o" + work_directory, file_path]
+	var output : Array
+	var error_code = OS.execute(executable, arguments, true, output, false, false)
+	if error_code == OK:
+		var path_to_extracted_file : String = work_directory + "%c" % [092] + file_path
+		return path_to_extracted_file#.replace("%c" % [092], "/")
+	else: 
+		print("utilities._7z_extract_file could not execute 7zip.")
+		print(arguments, output)
+		return ""
+
+func _delete_temp_file(path_to_file : String) -> void:
+	var directory = Directory.new()
+	if directory.file_exists(path_to_file):
+		directory.remove(path_to_file)
+		var folder : String = path_to_file.get_base_dir()
+		directory.remove(folder)
+		folder = folder.get_base_dir()
+		directory.remove(folder)
+		folder = folder.get_base_dir()
+		directory.remove(folder)
+		folder = folder.get_base_dir()
+		directory.remove(folder)
+		folder = folder.get_base_dir()
+		directory.remove(folder)
+
